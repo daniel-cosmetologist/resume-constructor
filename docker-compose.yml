@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: resume-backend
+    environment:
+      - HTTP_ADDR=:8080
+      - LATEX_SERVICE_URL=http://latex-service:8081
+    expose:
+      - "8080"
+    depends_on:
+      - latex-service
+
+  latex-service:
+    build: ./latex-service
+    container_name: resume-latex-service
+    environment:
+      - HTTP_ADDR=:8081
+      - TEMPLATE_PATH=templates/resume_template.tex
+    expose:
+      - "8081"
+
+  frontend:
+    build: ./frontend
+    container_name: resume-frontend
+    expose:
+      - "80"
+
+  gateway:
+    build: ./gateway-nginx
+    container_name: resume-gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - frontend
+      - backend
