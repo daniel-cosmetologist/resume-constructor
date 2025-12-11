@@ -8,71 +8,65 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
+
+	"resume_backend/internal/resume"
 )
 
-// Client инкапсулирует HTTP-взаимодействие с latex-service.
+// Client реализует вызов LaTeX-сервиса по HTTP.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
 	logger     *log.Logger
 }
 
-// NewClient создаёт новый клиент для общения с latex-service.
 func NewClient(baseURL string, logger *log.Logger) *Client {
 	if logger == nil {
 		logger = log.Default()
 	}
-	trimmed := strings.TrimRight(baseURL, "/")
+	if baseURL == "" {
+		baseURL = "http://latex-service:8081"
+	}
+
 	return &Client{
-		baseURL: trimmed,
+		baseURL: baseURL,
 		httpClient: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 		logger: logger,
 	}
 }
 
-// RenderPDF отправляет payload (данные резюме) в latex-service и возвращает PDF.
-func (c *Client) RenderPDF(ctx context.Context, payload any) ([]byte, error) {
-	if c.baseURL == "" {
-		return nil, fmt.Errorf("latex-service base URL is empty")
+// RenderResume отправляет JSON с резюме в LaTeX-сервис и возвращает PDF.
+func (c *Client) RenderResume(ctx context.Context, r resume.Resume) ([]byte, error) {
+	url := fmt.Sprintf("%s/internal/v1/render", c.baseURL)
+
+	payload, err := json.Marshal(r)
+	if err != nil {
+		return nil, fmt.Errorf("marshal resume: %w", err)
 	}
 
-	body, err := json.Marshal(payload)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	url := c.baseURL + "/internal/v1/render"
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("request to latex-service failed: %w", err)
+		return nil, fmt.Errorf("call latex-service: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		limited := io.LimitReader(resp.Body, 4096)
-		msg, _ := io.ReadAll(limited)
-		c.logger.Printf("latex-service error: status=%d body=%s", resp.StatusCode, string(msg))
-		return nil, fmt.Errorf("latex-service responded with status %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		c.logger.Printf("latex-service returned %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("latex-service returned status %d", resp.StatusCode)
 	}
 
 	pdf, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read PDF response: %w", err)
-	}
-
-	if len(pdf) == 0 {
-		return nil, fmt.Errorf("latex-service returned empty PDF")
+		return nil, fmt.Errorf("read pdf body: %w", err)
 	}
 
 	return pdf, nil

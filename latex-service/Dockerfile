@@ -7,14 +7,20 @@ RUN go mod download
 
 COPY . .
 
-# ВАЖНО: путь без дефиса, соответствует cmd/latexservice/main.go
+# Билдим бинарник latexservice
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/latexservice ./cmd/latexservice
 
+# ----- Runtime-образ с LaTeX -----
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    texlive-latex-base latexmk ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    texlive-latex-base \
+    texlive-latex-recommended \
+    texlive-latex-extra \
+    texlive-fonts-recommended \
+    latexmk \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

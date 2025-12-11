@@ -4,11 +4,14 @@ import (
 	"context"
 	"log"
 	stdhttp "net/http"
+
+	"resume_backend/internal/resume"
 )
 
-// ResumeService описывает интерфейс доменного сервиса генерации PDF.
+// ResumeService — интерфейс доменного сервиса, который знает,
+// как из модели Resume сделать PDF.
 type ResumeService interface {
-	GeneratePDF(ctx context.Context, req ResumeRequest) ([]byte, error)
+	GeneratePDF(ctx context.Context, req resume.Resume) ([]byte, error)
 }
 
 // Server инкапсулирует HTTP-маршрутизацию backend API.
@@ -37,7 +40,7 @@ func NewServer(resumeService ResumeService, logger *log.Logger) *Server {
 	return s
 }
 
-// registerRoutes регистрирует маршруты и вешает middleware.
+// registerRoutes регистрирует маршруты и навешивает middleware.
 func (s *Server) registerRoutes() {
 	// health-check
 	s.mux.Handle(
@@ -53,7 +56,7 @@ func (s *Server) registerRoutes() {
 	s.mux.Handle(
 		"/api/v1/resume/pdf",
 		s.applyMiddleware(
-			stdhttp.HandlerFunc(s.handleGenerateResumePDF),
+			stdhttp.HandlerFunc(s.handleGeneratePDF),
 			LoggingMiddleware(s.logger),
 			RecoverMiddleware(s.logger),
 			JSONOnlyMiddleware(),

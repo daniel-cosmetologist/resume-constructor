@@ -1,39 +1,33 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"log"
 	"net/http"
 
 	"resume_backend/internal/config"
 	httptransport "resume_backend/internal/http"
+	"resume_backend/internal/latexclient"
+	"resume_backend/internal/resume"
 )
-
-// dummyResumeService — временная реализация ResumeService.
-// На этапе интеграции с latex-service будет заменена реальной.
-type dummyResumeService struct {
-	latexServiceURL string
-	logger          *log.Logger
-}
-
-func (s *dummyResumeService) GeneratePDF(ctx context.Context, resume httptransport.ResumeRequest) ([]byte, error) {
-	// Здесь позднее будет реальный вызов latex-service.
-	return nil, errors.New("GeneratePDF is not implemented yet")
-}
 
 func main() {
 	cfg := config.Load()
 
 	logger := log.Default()
-	logger.Printf("starting resume-backend on %s", cfg.HTTPAddr)
+	logger.Printf(
+		"starting resume-backend on %s (latex-service: %s)",
+		cfg.HTTPAddr,
+		cfg.LaTeXServiceURL,
+	)
 
-	resumeSvc := &dummyResumeService{
-		latexServiceURL: cfg.LaTeXServiceURL,
-		logger:          logger,
-	}
+	// HTTP-клиент к latex-service
+	latexClient := latexclient.NewClient(cfg.LaTeXServiceURL, logger)
 
-	server := httptransport.NewServer(resumeSvc, logger)
+	// Доменный сервис резюме, который валидирует данные и зовёт latex-service
+	resumeService := resume.NewService(latexClient, logger)
+
+	// HTTP-слой (REST API)
+	server := httptransport.NewServer(resumeService, logger)
 
 	if err := http.ListenAndServe(cfg.HTTPAddr, server); err != nil {
 		logger.Fatalf("server exited with error: %v", err)

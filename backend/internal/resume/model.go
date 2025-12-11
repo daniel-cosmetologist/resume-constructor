@@ -1,62 +1,62 @@
 package resume
 
-// Resume описывает агрегированное резюме в доменном слое.
-type Resume struct {
-	FullName       string
-	Position       string
-	Summary        string
-	Contacts       Contacts
-	Skills         []string
-	Experience     []ExperienceEntry
-	Education      []EducationEntry
-	CustomSections []CustomSection
-	Photo          *Photo
-}
-
-// Contacts описывает контактные данные пользователя.
-type Contacts struct {
-	Email    string
-	Phone    string
-	Location string
-	Links    []Link
-}
-
-// Link описывает внешнюю ссылку (GitHub, LinkedIn и т.п.).
+// Link описывает одну ссылку в контактах (GitHub, LinkedIn и т.п.).
 type Link struct {
-	Label string
-	URL   string
+	Label string `json:"label"`
+	URL   string `json:"url"`
 }
 
-// ExperienceEntry описывает запись об опыте работы.
-type ExperienceEntry struct {
-	Company     string
-	Position    string
-	Location    string
-	StartDate   string
-	EndDate     string
-	Description string
-	Bullets     []string
+// Contacts содержит контактную информацию.
+type Contacts struct {
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Location string `json:"location"`
+	Links    []Link `json:"links"`
 }
 
-// EducationEntry описывает запись об образовании.
-type EducationEntry struct {
-	Institution string
-	Degree      string
-	Location    string
-	StartDate   string
-	EndDate     string
-	Details     string
+// ExperienceItem описывает один блок опыта работы.
+type ExperienceItem struct {
+	Company     string   `json:"company"`
+	Position    string   `json:"position"`
+	Location    string   `json:"location"`
+	StartDate   string   `json:"startDate"` // формат YYYY-MM
+	EndDate     string   `json:"endDate"`   // формат YYYY-MM или пусто, если по настоящее время
+	Description string   `json:"description"`
+	Bullets     []string `json:"bullets"`
 }
 
-// CustomSection описывает кастомную секцию с буллетами.
+// EducationItem описывает одну запись об обучении.
+type EducationItem struct {
+	Institution string `json:"institution"`
+	Degree      string `json:"degree"`
+	Location    string `json:"location"`
+	StartDate   string `json:"startDate"` // формат YYYY-MM
+	EndDate     string `json:"endDate"`   // формат YYYY-MM
+	Details     string `json:"details"`
+}
+
+// CustomSection — кастомный раздел (например, Homelab).
 type CustomSection struct {
-	Title        string
-	BulletSymbol string
-	Items        []string
+	Title        string   `json:"title"`
+	BulletSymbol string   `json:"bulletSymbol"`
+	Items        []string `json:"items"`
 }
 
-// Photo описывает загруженное фото в base64.
+// Photo — опциональное фото в base64.
 type Photo struct {
-	MimeType string
-	Data     string
+	MimeType string `json:"mimeType"`
+	Data     string `json:"data"`
+}
+
+// Resume — основная доменная модель резюме.
+type Resume struct {
+	FullName       string           `json:"fullName"`
+	Position       string           `json:"position"`
+	Summary        string           `json:"summary"`
+	Contacts       Contacts         `json:"contacts"`
+	Skills         []string         `json:"skills"`
+	Experience     []ExperienceItem `json:"experience"`
+	Education      []EducationItem  `json:"education"`
+	CustomSections []CustomSection  `json:"customSections"`
+	Photo          *Photo           `json:"photo"` // опционально
 }
