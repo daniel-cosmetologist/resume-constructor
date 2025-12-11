@@ -7,7 +7,8 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/latex-service ./cmd/latex-service
+# ВАЖНО: путь без дефиса, соответствует cmd/latexservice/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/latexservice ./cmd/latexservice
 
 FROM debian:bookworm-slim
 
@@ -17,9 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY --from=builder /app/latex-service /app/latex-service
+COPY --from=builder /app/latexservice /app/latexservice
 COPY templates ./templates
 
 EXPOSE 8081
 
-ENTRYPOINT ["/app/latex-service"]
+ENTRYPOINT ["/app/latexservice"]

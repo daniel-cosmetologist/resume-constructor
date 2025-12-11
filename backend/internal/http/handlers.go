@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,11 +11,6 @@ import (
 
 // Максимальный размер тела запроса с резюме (примерное значение).
 const maxResumeBodySize = 256 * 1024 // 256 KB
-
-// ResumeService описывает зависимость уровня бизнес-логики для генерации PDF.
-type ResumeService interface {
-	GeneratePDF(ctx context.Context, resume ResumeRequest) ([]byte, error)
-}
 
 // FieldError описывает ошибку с полями валидации.
 type FieldError interface {

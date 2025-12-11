@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/draw"
 	"image/jpeg"
-	"image/png"
 	"strings"
 )
 
@@ -32,16 +31,17 @@ func escapeLatex(s string) string {
 }
 
 // processPhoto декодирует base64, приводит фото к соотношению 3:4 и
-// пытается уложить размер в maxPhotoSizeBytes, возвращая байты и расширение файла.
+// старается уложить размер в maxPhotoSizeBytes. Возвращает байты и расширение.
 func processPhoto(dataBase64, mimeType string) ([]byte, string, error) {
 	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(dataBase64))
 	if err != nil {
 		return nil, "", fmt.Errorf("decode base64: %w", err)
 	}
 
+	// Пытаемся декодировать как изображение.
 	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err != nil {
-		// Если не удалось декодировать как изображение, но размер допустимый — вернуть как есть.
+		// Если не декодируется, но размер уже в пределах лимита — возвращаем как есть.
 		if len(raw) <= maxPhotoSizeBytes {
 			ext := detectExt(mimeType)
 			return raw, ext, nil
@@ -49,8 +49,10 @@ func processPhoto(dataBase64, mimeType string) ([]byte, string, error) {
 		return nil, "", fmt.Errorf("photo is too large and cannot be decoded as image")
 	}
 
+	// Обрезаем центр до соотношения 3:4.
 	cropped := centerCropToRatio(img, 3, 4)
 
+	// Кодируем в JPEG, подбирая качество, чтобы уложиться в лимит.
 	out, err := encodeJPEGWithLimit(cropped, maxPhotoSizeBytes)
 	if err != nil {
 		return nil, "", err
@@ -59,6 +61,7 @@ func processPhoto(dataBase64, mimeType string) ([]byte, string, error) {
 	return out, "jpg", nil
 }
 
+// detectExt определяет расширение по mimeType.
 func detectExt(mimeType string) string {
 	switch strings.ToLower(strings.TrimSpace(mimeType)) {
 	case "image/jpeg", "image/jpg":
@@ -126,17 +129,4 @@ func encodeJPEGWithLimit(img image.Image, limit int) ([]byte, error) {
 	}
 
 	return last, nil
-}
-
-// optional helpers for future PNG-specific handling (not used directly, но готовы при необходимости).
-func decodeImage(raw []byte, mimeType string) (image.Image, error) {
-	reader := bytes.NewReader(raw)
-	switch strings.ToLower(strings.TrimSpace(mimeType)) {
-	case "image/jpeg", "image/jpg":
-		return jpeg.Decode(reader)
-	case "image/png":
-		return png.Decode(reader)
-	default:
-		return image.Decode(reader)
-	}
 }

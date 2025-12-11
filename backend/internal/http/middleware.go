@@ -8,7 +8,7 @@ import (
 )
 
 // Middleware описывает функцию-обёртку над http.Handler.
-type Middleware func(stdhttp.Handler) stdhttp.Handler)
+type Middleware func(stdhttp.Handler) stdhttp.Handler
 
 // applyMiddleware последовательно оборачивает обработчик в цепочку middleware.
 func (s *Server) applyMiddleware(h stdhttp.Handler, mws ...Middleware) stdhttp.Handler {
